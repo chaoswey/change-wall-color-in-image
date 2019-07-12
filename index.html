@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+</head>
+<body>
+<div class="container" id="app">
+    <div class="row">
+        <div class="col">
+            <img id="sw1" src="./sw.jpg" class="rounded" width="200px">
+            <img id="sw2" src="./sw.png" class="rounded" width="200px">
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-sm">
+            <div id="controls">
+                Red:
+                <input id="red" type="range" min="0" max="256" step="1" value="150"/>
+                Green:
+                <input id="green" type="range" min="0" max="256" step="1" value="150"/>
+                Blue:
+                <input id="blue" type="range" min="0" max="256" step="1" value="150"/>
+                Alpha:
+                <input id="alpha" type="range" min="0" max="1" step="0.05" value="0.5"/>
+            </div>
+            <div>
+                <div id="container"></div>
+            </div>
+        </div>
+    </div>
+</div>
+<style>
+    #app .konvajs-content {
+        border: 1px solid #1f1f1f;
+    }
+</style>
+<script src="./konva.min.js"></script>
+<script>
+    var stage = new Konva.Stage({
+        container: 'container',
+        width: 1200,
+        height: 725
+    });
+
+    var layer = new Konva.Layer();
+    layer.globalCompositeOperation("multiply");
+
+    var sources = {
+        background: "sw.jpg",
+        layer1: "sw.png"
+    };
+
+    loadImages(sources.background, function (image) {
+        var background = new Konva.Image({image: image});
+        layer.add(background);
+        stage.add(layer);
+
+
+        loadImages(sources.layer1, function (image) {
+            var layer1 = new Konva.Image({image: image});
+
+            layer1.on('mouseover', function () {
+                console.log('mouseover layer1');
+            });
+
+            layer1.on('mouseout', function () {
+                console.log('mouseout layer1');
+            });
+
+            layer1.cache();
+            layer1.drawHitFromCache();
+            layer1.filters([Konva.Filters.RGBA]);
+            layer1.blue(0);
+            layer1.green(0);
+            layer1.red(255);
+            layer1.alpha(1);
+            layer.add(layer1);
+            stage.add(layer);
+
+            var sliders = ['red', 'green', 'blue', 'alpha'];
+            sliders.forEach(function (attr) {
+                var slider = document.getElementById(attr);
+
+                function update() {
+                    layer1[attr](parseFloat(slider.value));
+                    layer.batchDraw();
+                }
+
+                slider.oninput = update;
+                update();
+            });
+        });
+    });
+
+    function loadImages(url, callback) {
+        let image = new Image();
+        image.onload = function () {
+            callback(image);
+        };
+        image.src = url;
+    }
+</script>
+</body>
+</html>
