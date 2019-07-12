@@ -4,4 +4,4 @@ use konva
 
 use Canvas
 
-![demo](http://url/to/img.png)
+![demo](https://github.com/chaoswey/change-wall-color-in-image/blob/master/demo.gif)
