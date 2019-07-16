@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-material-design/4.0.2/bootstrap-material-design.min.css">
+</head>
+<body>
+<div class="container" id="app">
+    <canvas id=canvas width=1200 height=800></canvas>
+</div>
+<style>
+    #app .konvajs-content {
+        border: 1px solid #1f1f1f;
+    }
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+<script>
+    var ctx = canvas.getContext('2d'), img = new Image;
+
+    img.onload = draw;
+    img.src = "./2/sw.png";
+
+    function draw() {
+
+        var dArr = [-1, -1, 0, -1, 1, -1, -1, 0, 1, 0, -1, 1, 0, 1, 1, 1], s = 1;
+
+        for (var i = 0; i < dArr.length; i += 2) {
+            ctx.drawImage(img, dArr[i] * s, dArr[i + 1] * s);
+        }
+
+        ctx.globalCompositeOperation = "source-in";
+        ctx.fillStyle = "red";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        ctx.globalCompositeOperation = "xor";
+        ctx.drawImage(img, 0, 0);
+    }
+</script>
+</body>
+</html>
