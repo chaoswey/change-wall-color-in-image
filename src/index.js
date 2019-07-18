@@ -16,8 +16,8 @@ new Vue({
             luminance: 0.5
         },
         sources: {
-            background: "./1/sw.jpg",
-            overlay: "./1/sw.png"
+            background: "",
+            overlay: ""
         },
         stage: {
             width: 1200,
@@ -35,9 +35,10 @@ new Vue({
         frontend: {
             image: undefined
         },
-        cover: {
+        over: {
             image: undefined
         },
+        steps: [],
         backendLayer: {
             backendLayer: undefined,
             backendGroup: undefined,
@@ -47,8 +48,14 @@ new Vue({
         }
     },
     created: function () {
+        //載入圖片
+        this.sources.background = document.getElementById('sw1').getAttribute('src');
+        this.sources.overlay = document.getElementById('sw2').getAttribute('src');
+
+        //等待兩張圖載入
         Promise.all([this.imagePromise(this.sources.background), this.imagePromise(this.sources.overlay)]).then(images => {
             this.background.image = images[0];
+            this.frontend.image = images[0];
             this.overlay.image = images[1];
 
             //等待 vue doc 執行完成
@@ -71,18 +78,6 @@ new Vue({
 
             //取得灰色 背景
             this.getGrayscaleOverlayBlock();
-
-            //backend group 改成 覆蓋模式
-            this.backendGroupSourceOver();
-
-            //背景灰階 改回來
-            this.backendLayer.background.filters([]);
-
-            //覆蓋圖層 變成 色彩增值 及綁定事件
-            this.handleOverlay();
-
-            //重繪 backend layer
-            this.backendLayerBatchDraw();
         },
         //覆蓋圖層 變成 色彩增值 及綁定事件
         handleOverlay: function () {
@@ -91,7 +86,6 @@ new Vue({
         },
         //取得 灰階 覆蓋背景
         getGrayscaleOverlayBlock: function () {
-            this.backendLayer.background.filters([Konva.Filters.Grayscale]);
             this.backendGroupDestinationAtop();
             this.backendLayerBatchDraw();
             this.backendGroupExport();
@@ -103,28 +97,48 @@ new Vue({
             this.$nextTick(() => {
                 this.backendLayer.grayscale = this.$refs.grayscale.getStage();
                 this.backendLayer.grayscale.cache();
-                this.backendLayer.grayscale.drawHitFromCache();
                 this.backendLayer.grayscale.filters([Konva.Filters.HSL]);
                 this.changeGrayscaleHSL();
+
+                //去除背景
+                this.backendLayer.background.hide();
+                this.backendLayer.backendGroup.globalCompositeOperation("source-over");
+                this.handleOverlay();
+                this.frontendRefresh();
+            });
+        },
+        frontendRefresh: function () {
+            this.imagePromise(this.$refs.backendLayer.getStage().toDataURL()).then(image => {
+                this.over.image = image;
+
+                this.$nextTick(() => {
+                    this.$refs.over.getStage().cache();
+                    this.$refs.over.getStage().drawHitFromCache();
+                    this.$refs.frontendLayer.getStage().moveToTop();
+                    this.$refs.frontendGroup.getStage().moveToTop();
+                    this.$refs.over.getStage().moveToTop();
+
+                    this.$refs.frontendLayer.getStage().batchDraw();
+                });
             });
         },
         //初始化 覆蓋圖層
         overlayInit: function () {
             let overlay = this.backendLayer.overlay;
             overlay.cache();
-            overlay.drawHitFromCache();
             overlay.filters([Konva.Filters.RGBA]);
         },
         //初始化 背景
         backgroundInit: function () {
             let background = this.backendLayer.background;
+            background.filters([Konva.Filters.Grayscale]);
             background.cache();
         },
-        //檢查 覆蓋圖層 變數
+        //檢查 覆蓋圖層 預設變數
         changeGrayscaleHSL: function () {
             this.backendLayer.grayscale.luminance(parseFloat(this.hsl.luminance));
         },
-        //檢查 覆蓋圖層 變數
+        //檢查 覆蓋圖層 預設變數
         changeVerlayColor: function () {
             let overlay = this.backendLayer.overlay;
             Object.keys(this.picker).map((key, index) => {
@@ -139,13 +153,9 @@ new Vue({
         backendGroupDestinationAtop: function () {
             this.backendLayer.backendGroup.globalCompositeOperation("destination-atop");
         },
-        // backend group 一般圖層模式
-        backendGroupSourceOver: function () {
-            this.backendLayer.backendGroup.globalCompositeOperation("source-over");
-        },
         // backend layer 重繪
         backendLayerBatchDraw: function () {
-            this.backendLayer.backendLayer.batchDraw();
+            this.$refs.backendLayer.getStage().batchDraw();
         },
         // backend group 輸出成圖片
         backendGroupExport: function () {
@@ -164,11 +174,17 @@ new Vue({
         handlerGrayscaleHSL: function () {
             this.changeGrayscaleHSL();
             this.backendLayerBatchDraw();
+            this.frontendRefresh();
+
+            this.steps.push(this.backendLayer.backendGroup.toDataURL());
         },
         // input 事件
         handlerChangeVerlayColor: function () {
             this.changeVerlayColor();
             this.backendLayerBatchDraw();
+            this.frontendRefresh();
+
+            // this.steps.push(this.backendLayer.backendGroup.toDataURL());
         },
         // 下載 事件
         handlerDownload: function () {
@@ -183,6 +199,25 @@ new Vue({
             link.click();
             document.body.removeChild(link);
             link = undefined;
+        },
+        handlerOverMouseover: function () {
+            this.$refs.over.getStage().shadowEnabled(true);
+            this.$refs.over.getStage().shadowBlur(10);
+            this.$refs.over.getStage().shadowOffset({x: 0, y: 0});
+            this.$refs.over.getStage().shadowColor('#3884ff');
+            this.$refs.over.getStage().shadowOpacity(1);
+
+            this.$refs.over.getStage().cache();
+            this.$refs.over.getStage().drawHitFromCache();
+
+            this.$refs.frontendLayer.getStage().batchDraw();
+        },
+        handlerOverMouseout: function () {
+            this.$refs.over.getStage().shadowEnabled(false);
+            this.$refs.over.getStage().cache();
+            this.$refs.over.getStage().drawHitFromCache();
+
+            this.$refs.frontendLayer.getStage().batchDraw();
         }
     }
 });
