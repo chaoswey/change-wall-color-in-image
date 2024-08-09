@@ -1,3 +1,4 @@
 {
-    "/dist/index.min.js": "/dist/index.min.js"
+    "/dist/index.min.js": "/dist/index.min.js",
+    "/dist/index.min.js.map": "/dist/index.min.js.map"
 }
